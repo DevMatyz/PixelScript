@@ -47,13 +47,16 @@ Rayfield:Notify({
 local Button = PlayerTab:CreateButton({
    Name = "Infinite Jump",
    Callback = function()
--- LocalScript inside StarterPlayerScripts
+-- LocalScript inside ScreenGui
 
--- Define a function to make the character jump
+-- Define a variable to control the jumping
+local isJumping = true
+
+-- Define a function to make the character jump infinitely
 local function jumpInfinitely(character)
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        while true do
+        while isJumping do
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
             wait(0.1) -- Wait a bit to allow the jump animation to play
         end
@@ -64,14 +67,35 @@ end
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
--- Start the infinite jump
-jumpInfinitely(character)
+-- Start the infinite jump in a separate thread
+spawn(function()
+    jumpInfinitely(character)
+end)
 
 -- Ensure the function runs again if the character respawns
 player.CharacterAdded:Connect(function(newCharacter)
     wait(1) -- Wait for the character to load properly
-    jumpInfinitely(newCharacter)
+    if isJumping then
+        spawn(function()
+            jumpInfinitely(newCharacter)
+        end)
+    end
 end)
-   -- The function that takes place when the button is pressed
-   end,
-})
+
+-- Get the button and connect the click event
+local screenGui = script.Parent
+local button = screenGui:WaitForChild("TextButton")
+
+button.MouseButton1Click:Connect(function()
+    isJumping = not isJumping -- Toggle the jumping state
+    if isJumping then
+        spawn(function()
+            jumpInfinitely(player.Character or player.CharacterAdded:Wait())
+        end)
+    end
+end)
+
+-- Optional: Customize the button
+button.Text = "Toggle Jump"
+button.Size = UDim2.new(0, 200, 0, 50) -- Width: 200px, Height: 50px
+button.Position = UDim2.new(0.5, -100, 0.5, -25) -- Center the button on the screen
